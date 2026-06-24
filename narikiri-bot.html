@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>モノマネ芸人AI</title>
+<style>
+:root{--bg:#080a00;--bg2:#101400;--bg3:#181e00;--card:#141800;--bor:rgba(255,220,50,.12);--bor2:rgba(255,220,50,.28);--gold:#f0b830;--gold2:#d4960a;--gold-xl:rgba(240,184,48,.12);--grn:#10b981;--red:#ef4444;--pink:#f472b6;--pur:#a855f7;--txt:#fffff0;--txt2:#c0c080;--txt3:#708040;--r:12px;--r2:8px;}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+body{background:var(--bg);color:var(--txt);font-family:'Hiragino Sans','Noto Sans JP',sans-serif;height:100dvh;display:flex;flex-direction:column;}
+.hdr{background:linear-gradient(135deg,#141800,#201000);border-bottom:1.5px solid var(--bor);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.hdr-title{font-size:15px;font-weight:900;background:linear-gradient(90deg,var(--gold),#fff,var(--gold));background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;animation:shine 3s linear infinite;}
+@keyframes shine{to{background-position:200% center;}}
+.char-bar{background:var(--bg2);border-bottom:1.5px solid var(--bor);padding:8px 14px;display:flex;align-items:center;gap:10px;flex-shrink:0;}
+.char-badge{padding:4px 12px;border-radius:20px;background:var(--gold-xl);border:1.5px solid var(--bor2);font-size:12px;font-weight:700;color:var(--gold);}
+.char-change-btn{padding:4px 10px;border-radius:20px;border:1.5px solid var(--bor2);background:transparent;color:var(--txt3);font-size:10px;cursor:pointer;font-family:inherit;}
+.nav-links{display:flex;gap:5px;}
+.nav-btn{padding:5px 10px;border-radius:20px;border:1.5px solid var(--bor2);background:transparent;color:var(--txt2);font-size:10px;cursor:pointer;text-decoration:none;}
+.msgs{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
+.msg-row{display:flex;gap:8px;align-items:flex-start;}
+.msg-row.user{flex-direction:row-reverse;}
+.avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;background:var(--gold-xl);border:1.5px solid var(--bor2);}
+.bubble{max-width:82%;padding:10px 14px;border-radius:12px;font-size:12px;line-height:1.9;}
+.bubble.ai{background:var(--card);border:1.5px solid var(--bor2);}
+.bubble.user{background:var(--gold-xl);border:1.5px solid var(--bor2);}
+.typing{display:flex;gap:4px;align-items:center;padding:6px;}
+.td{width:6px;height:6px;border-radius:50%;background:var(--gold);animation:tdot .8s infinite;}
+.td:nth-child(2){animation-delay:.15s;}
+.td:nth-child(3){animation-delay:.3s;}
+@keyframes tdot{0%,60%,100%{opacity:.3;}30%{opacity:1;}}
+.no-char{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;}
+.no-char-ico{font-size:48px;}
+.no-char-txt{font-size:14px;color:var(--txt3);text-align:center;line-height:1.7;}
+.footer{background:var(--bg2);border-top:1.5px solid var(--bor);padding:10px 14px;flex-shrink:0;}
+.input-row{display:flex;gap:8px;align-items:flex-end;}
+.inp-ta{flex:1;padding:10px 13px;background:var(--bg3);border:1.5px solid var(--bor);border-radius:20px;color:var(--txt);font-size:13px;font-family:inherit;resize:none;outline:none;max-height:80px;line-height:1.6;}
+.inp-ta:focus{border-color:var(--gold);}
+.send-btn{padding:10px 16px;border-radius:20px;border:none;background:linear-gradient(135deg,var(--gold2),var(--gold));color:#000;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0;}
+.quick-row{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;margin-bottom:8px;}
+.quick-btn{padding:5px 11px;border-radius:20px;border:1.5px solid var(--bor);background:var(--bg3);color:var(--txt3);font-size:10px;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:inherit;}
+#toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:var(--bg2);border:1.5px solid var(--bor2);color:var(--txt);padding:8px 18px;border-radius:20px;font-size:11px;font-weight:700;z-index:9999;pointer-events:none;opacity:0;transition:opacity .3s;white-space:nowrap;}
+#toast.show{opacity:1;}
+</style>
+</head>
+<body>
+<div class="hdr">
+  <div>
+    <div class="hdr-title">モノマネ芸人AI</div>
+    <div style="font-size:9px;color:var(--txt3);">誰にでもなりきる</div>
+  </div>
+  <div class="nav-links">
+    <a class="nav-btn" href="petchi-hub.html">Hub</a>
+    <a class="nav-btn" href="otaku-engine.html">Research</a>
+    <button class="nav-btn" onclick="clearChat()">Reset</button>
+  </div>
+</div>
+
+<div class="char-bar">
+  <div id="char-badge" class="char-badge">キャラ未選択</div>
+  <button class="char-change-btn" onclick="goResearch()">キャラを変える</button>
+  <button class="char-change-btn" onclick="sendToPetchi()" id="petchi-btn" style="display:none;">ペットに反映</button>
+</div>
+
+<div class="msgs" id="msgs"></div>
+
+<div class="footer">
+  <div class="quick-row" id="quick-row"></div>
+  <div class="input-row">
+    <textarea class="inp-ta" id="inp" rows="1"
+      oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px'"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();doSend();}"></textarea>
+    <button class="send-btn" onclick="doSend()">送</button>
+  </div>
+</div>
+<div id="toast"></div>
+<script>
+var EP='https://asia-northeast1-kensetsu-nippo-842a2.cloudfunctions.net/askAI';
+var KEY='HeartsHouse2026Key';
+var currentChar=null;
+var currentPrompt='';
+var messages=[];
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+var _tt;
+function showToast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(_tt);_tt=setTimeout(function(){t.classList.remove('show');},3000);}
+
+async function callAI(prompt,sysprompt){
+  var body={model:'gemini-2.5-flash',mode:'normal',prompt:prompt,useSearch:false,useCache:false};
+  if(sysprompt) body.system=sysprompt;
+  var r=await fetch(EP,{method:'POST',headers:{'Content-Type':'application/json','x-access-key':KEY},body:JSON.stringify(body)});
+  var d=await r.json().catch(function(){return{};});
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return (d&&d.data&&d.data.text)?d.data.text:((d&&d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts&&d.candidates[0].content.parts[0])?d.candidates[0].content.parts[0].text:((d&&d.text)?d.text:''));
+}
+
+// なりきりエンジン：キャラデータからシステムプロンプトを生成
+async function buildNarikiriPrompt(charData){
+  var charName=charData.name||'不明';
+  var catchphrases=(charData.catchphrases||[]).join('、');
+  var famousLines=(charData.famous_lines||[]).slice(0,3).join(' / ');
+
+  var enginePrompt='以下のキャラクター情報から、なりきりチャット用の完璧なシステムプロンプトを日本語で生成してください。100〜200文字程度で、口調・口癖・性格・思考パターンを凝縮してください。\n\nキャラ名:'+charName+'\n口調:'+charData.speech_style+'\n口癖:'+catchphrases+'\n性格:'+charData.personality+'\n思考:'+charData.thinking_pattern+'\n名言:'+famousLines;
+
+  var body={model:'gemini-2.5-flash',mode:'normal',prompt:enginePrompt,useSearch:false,useCache:true};
+  var r=await fetch(EP,{method:'POST',headers:{'Content-Type':'application/json','x-access-key':KEY},body:JSON.stringify(body)});
+  var d=await r.json().catch(function(){return{};});
+  var generated=(d&&d.data&&d.data.text)?d.data.text:((d&&d.candidates&&d.candidates[0]&&d.candidates[0].content&&d.candidates[0].content.parts&&d.candidates[0].content.parts[0])?d.candidates[0].content.parts[0].text:((d&&d.text)?d.text:''));
+
+  // エンジンで生成したプロンプトに追加の制約を付ける
+  return generated+'\n\n絶対にAIやロボットだと明かさないこと。どんな質問にも'+charName+'として100%なりきって答えること。';
+}
+
+function setChar(charData){
+  currentChar=charData;
+  messages=[];
+  var charName=charData.name||'不明';
+  document.getElementById('char-badge').textContent=charName+'としてなりきり中';
+  document.getElementById('petchi-btn').style.display='block';
+  document.getElementById('msgs').innerHTML='';
+  document.getElementById('inp').placeholder=charName+'に話しかける...';
+
+  // クイックボタンを更新
+  var quicks=['自己紹介して','口癖を使って話して','得意なことは？','怒らせてみる'];
+  document.getElementById('quick-row').innerHTML=quicks.map(function(q){
+    return '<button class="quick-btn" onclick="quickSend(\''+esc(q)+'\')">'+esc(q)+'</button>';
+  }).join('');
+
+  // なりきりエンジンでプロンプト生成
+  document.getElementById('msgs').innerHTML='<div class="msg-row"><div class="avatar">🎭</div><div class="bubble ai">なりきりエンジンを起動中...</div></div>';
+  buildNarikiriPrompt(charData).then(function(prompt){
+    currentPrompt=prompt;
+    localStorage.setItem('narikiri_prompt',prompt);
+    document.getElementById('msgs').innerHTML='';
+    // 初回挨拶
+    var hello=charName+'として登場します。挨拶と自己紹介を1〜2文で。';
+    return callAI(hello,currentPrompt);
+  }).then(function(reply){
+    addMsg('ai',reply);
+    messages.push({role:'assistant',content:reply});
+    showToast(charName+'の準備完了');
+  }).catch(function(e){
+    document.getElementById('msgs').innerHTML='';
+    showToast('エラー:'+e.message);
+  });
+}
+
+function addMsg(role,content){
+  var el=document.getElementById('msgs');
+  var row=document.createElement('div');
+  row.className='msg-row '+(role==='user'?'user':'');
+  var av=document.createElement('div');
+  av.className='avatar';
+  av.textContent=role==='user'?'👤':'🎭';
+  var bub=document.createElement('div');
+  bub.className='bubble '+(role==='user'?'user':'ai');
+  bub.textContent=content;
+  row.appendChild(av);row.appendChild(bub);
+  el.appendChild(row);
+  el.scrollTop=el.scrollHeight;
+}
+function addTyping(){
+  var el=document.getElementById('msgs');
+  var row=document.createElement('div');
+  row.id='typing-row';row.className='msg-row';
+  row.innerHTML='<div class="avatar">🎭</div><div class="bubble ai"><div class="typing"><div class="td"></div><div class="td"></div><div class="td"></div></div></div>';
+  el.appendChild(row);el.scrollTop=el.scrollHeight;
+}
+function removeTyping(){var r=document.getElementById('typing-row');if(r)r.remove();}
+
+function doSend(){
+  var inp=document.getElementById('inp');
+  var text=inp.value.trim();
+  if(!text) return;
+  inp.value='';inp.style.height='auto';
+  sendMsg(text);
+}
+function quickSend(text){sendMsg(text);}
+
+async function sendMsg(text){
+  if(!currentChar){showToast('先にキャラを選んでください');return;}
+  addMsg('user',text);
+  messages.push({role:'user',content:text});
+  addTyping();
+
+  // 会話履歴を含めたプロンプト
+  var hist=messages.slice(-8).map(function(m){return (m.role==='user'?'相手：':'あなた（'+currentChar.name+'）：')+m.content;}).join('\n');
+  var prompt=hist+'\nあなた（'+currentChar.name+'）：';
+
+  try{
+    var reply=await callAI(prompt,currentPrompt);
+    removeTyping();
+    messages.push({role:'assistant',content:reply});
+    addMsg('ai',reply);
+    // Firestore保存
+    try{
+      var fb=window.__fb;
+      if(fb&&fb.auth&&fb.auth.currentUser){
+        var uid=fb.auth.currentUser.uid;
+        fb.setDoc(fb.doc(fb.db,'narikiri_chat',uid),{
+          charName:currentChar.name,messages:messages.slice(-20),updatedAt:fb.serverTimestamp()
+        });
+      }
+    }catch(ex){}
+  }catch(e){removeTyping();showToast('エラー:'+e.message);}
+}
+
+function clearChat(){
+  messages=[];
+  document.getElementById('msgs').innerHTML='';
+  if(currentChar) setChar(currentChar);
+}
+
+function goResearch(){
+  if(window.parent!==window){
+    window.parent.postMessage({type:'OPEN_OTAKU'},'*');
+  } else {
+    window.location.href='otaku-engine.html';
+  }
+}
+
+function sendToPetchi(){
+  if(!currentChar) return;
+  if(window.parent!==window){
+    window.parent.postMessage({type:'PET_NARIKIRI',charName:currentChar.name},'*');
+    showToast('ペットに'+currentChar.name+'を反映しました');
+  } else {
+    showToast('ハブ経由で使用してください');
+  }
+}
+
+// postMessage受信
+window.addEventListener('message',function(e){
+  if(!e.data) return;
+  if(e.data.type==='CHAR_DATA'&&e.data.data){
+    setChar(e.data.data);
+  }
+});
+
+// 初期化：localStorageからキャラを読む
+(function(){
+  var saved=localStorage.getItem('narikiri_char_data');
+  if(saved){
+    try{
+      var d=JSON.parse(saved);
+      if(d&&d.name) setChar(d);
+    }catch(e){}
+  } else {
+    // キャラ未選択状態
+    document.getElementById('msgs').innerHTML='<div class="no-char"><div class="no-char-ico">🎭</div><div class="no-char-txt">キャラ研究AIでキャラクターを選んでください<br>誰にでもなりきります</div><button onclick="goResearch()" style="padding:12px 24px;border-radius:20px;border:none;background:linear-gradient(135deg,#d4960a,#f0b830);color:#000;font-size:13px;font-weight:700;cursor:pointer;">キャラを選ぶ</button></div>';
+  }
+})();
+</script>
+</body>
+</html>
